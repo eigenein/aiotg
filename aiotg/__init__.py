@@ -369,6 +369,9 @@ class Update(ResponseBase):
 
 
 class Telegram:
+    """
+    Telegram Bot API wrapper.
+    """
 
     headers = {"Content-Type": "application/json"}
     logger = logging.getLogger(__name__)

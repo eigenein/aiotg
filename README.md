@@ -4,6 +4,11 @@
 
 [![Build Status](https://travis-ci.org/eigenein/aiotg.svg?branch=master)](https://travis-ci.org/eigenein/aiotg)
 
+## Features
+
+* Supports [long polling](https://core.telegram.org/bots/api#getupdates).
+* Supports [type hinting](https://docs.python.org/3/library/typing.html).
+
 ## Library Installation
 
 ```sh

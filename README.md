@@ -23,6 +23,20 @@ git+https://github.com/eigenein/aiotg.git
 
 ## Getting Started
 
+Receiving updates:
+
+```python
+offset = 0
+async with aiotg.Telegram(token) as telegram:  # type: aiotg.Telegram
+    while True:
+        updates = await telegram.get_updates(offset, limit=100, timeout=5)
+        if not updates:
+            continue
+        for update in updates:
+            logging.debug("Got update: %s", update)
+        offset = updates[-1].id + 1
+```
+
 ## Source Code
 
 The project is hosted on [GitHub](https://github.com/eigenein/aiotg).

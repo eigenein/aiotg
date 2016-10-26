@@ -2,6 +2,8 @@
 
 [Telegram Bot API](https://core.telegram.org/bots/api) wrapper for [`aiohttp`](https://aiohttp.readthedocs.io/en/stable/).
 
+[![Build Status](https://travis-ci.org/eigenein/aiotg.svg?branch=master)](https://travis-ci.org/eigenein/aiotg)
+
 ## Library Installation
 
 ```sh

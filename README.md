@@ -7,7 +7,13 @@
 ## Library Installation
 
 ```sh
-pip install git+git://github.com/eigenein/aiotg.git
+pip install git+https://github.com/eigenein/aiotg.git
+```
+
+You may want to state the library in `requirements.txt`:
+
+```
+git+https://github.com/eigenein/aiotg.git
 ```
 
 ## Getting Started

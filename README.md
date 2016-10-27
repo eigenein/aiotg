@@ -37,6 +37,12 @@ async with aiotg.Telegram(token) as telegram:  # type: aiotg.Telegram
         offset = updates[-1].id + 1
 ```
 
+## Examples
+
+These bots are built with `aiotg`:
+
+* [eigenein/loggerbot](https://github.com/eigenein/loggerbot)
+
 ## Source Code
 
 The project is hosted on [GitHub](https://github.com/eigenein/aiotg).

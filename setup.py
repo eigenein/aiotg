@@ -17,7 +17,6 @@ distutils.core.setup(
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Topic :: Communications :: Chat",
         "Topic :: Software Development :: Libraries :: Python Modules",

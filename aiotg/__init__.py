@@ -5,12 +5,16 @@ import datetime
 import enum
 import json
 import logging
+import sys
 
 from typing import Any, Callable, List, Optional, TypeVar, Union
 
 import aiohttp
 
 T = TypeVar("T")
+
+if sys.version_info < (3, 6):
+    raise ImportError("aiotg requires Python 3.6+")
 
 
 class ParseMode(enum.Enum):
@@ -85,10 +89,10 @@ class User(ResponseBase):
     __slots__ = ("id", "first_name", "last_name", "username")
 
     def __init__(self, user: dict):
-        self.id = user["id"]  # type: int
-        self.first_name = user["first_name"]  # type: str
-        self.last_name = user.get("last_name")  # type: Optional[str]
-        self.username = user.get("username")  # type: Optional[str]
+        self.id: int = user["id"]
+        self.first_name: str = user["first_name"]
+        self.last_name: Optional[str] = user.get("last_name")
+        self.username: Optional[str] = user.get("username")
 
 
 class Chat(ResponseBase):
@@ -99,12 +103,12 @@ class Chat(ResponseBase):
     __slots__ = ("id", "type", "title", "username", "first_name", "last_name")
 
     def __init__(self, chat: dict):
-        self.id = chat["id"]  # type: int
+        self.id: int = chat["id"]
         self.type = ChatType(chat["type"])
-        self.title = chat.get("title")  # type: Optional[str]
-        self.username = chat.get("username")  # type: Optional[str]
-        self.first_name = chat.get("first_name")  # type: Optional[str]
-        self.last_name = chat.get("last_name")  # type: Optional[str]
+        self.title: Optional[str] = chat.get("title")
+        self.username: Optional[str] = chat.get("username")
+        self.first_name: Optional[str] = chat.get("first_name")
+        self.last_name: Optional[str] = chat.get("last_name")
 
 
 class MessageEntity(ResponseBase):
@@ -116,9 +120,9 @@ class MessageEntity(ResponseBase):
 
     def __init__(self, message_entity: dict):
         self.type = MessageEntityType(message_entity["type"])
-        self.offset = message_entity["offset"]  # type: int
-        self.length = message_entity["length"]  # type: int
-        self.url = message_entity.get("url")  # type: Optional[str]
+        self.offset: int = message_entity["offset"]
+        self.length: int = message_entity["length"]
+        self.url: Optional[str] = message_entity.get("url")
         self.user = get_optional(message_entity, "user", User)
 
     def __len__(self):
@@ -133,12 +137,12 @@ class Audio(ResponseBase):
     __slots__ = ("file_id", "duration", "performer", "title", "mime_type", "file_size")
 
     def __init__(self, audio: dict):
-        self.file_id = audio["file_id"]  # type: str
+        self.file_id: str = audio["file_id"]
         self.duration = datetime.timedelta(seconds=audio["duration"])
-        self.performer = audio.get("performer")  # type: Optional[str]
-        self.title = audio.get("title")  # type: Optional[str]
-        self.mime_type = audio.get("mime_type")  # type: Optional[str]
-        self.file_size = audio.get("file_size")  # type: Optional[int]
+        self.performer: Optional[str] = audio.get("performer")
+        self.title: Optional[str] = audio.get("title")
+        self.mime_type: Optional[str] = audio.get("mime_type")
+        self.file_size: Optional[int] = audio.get("file_size")
 
 
 class PhotoSize(ResponseBase):
@@ -147,10 +151,10 @@ class PhotoSize(ResponseBase):
     https://core.telegram.org/bots/api#photosize
     """
     def __init__(self, photo_size: dict):
-        self.file_id = photo_size["file_id"]  # type: str
-        self.width = photo_size["width"]  # type: int
-        self.height = photo_size["height"]  # type: int
-        self.file_size = photo_size.get("file_size")  # type: Optional[int]
+        self.file_id: str = photo_size["file_id"]
+        self.width: int = photo_size["width"]
+        self.height: int = photo_size["height"]
+        self.file_size: Optional[int] = photo_size.get("file_size")
 
 
 class Document(ResponseBase):
@@ -161,11 +165,11 @@ class Document(ResponseBase):
     __slots__ = ("file_id", "thumbnail", "file_name", "mime_type", "file_size")
 
     def __init__(self, document: dict):
-        self.file_id = document["file_id"]  # type: str
+        self.file_id: str = document["file_id"]
         self.thumbnail = get_optional(document, "thumb", PhotoSize)
-        self.file_name = document.get("file_name")  # type: Optional[str]
-        self.mime_type = document.get("mime_type")  # type: Optional[str]
-        self.file_size = document.get("file_size")  # type: Optional[int]
+        self.file_name: Optional[str] = document.get("file_name")
+        self.mime_type: Optional[str] = document.get("mime_type")
+        self.file_size: Optional[int] = document.get("file_size")
 
 
 class Sticker(ResponseBase):
@@ -176,12 +180,12 @@ class Sticker(ResponseBase):
     __slots__ = ("file_id", "width", "height", "thumbnail", "emoji", "file_size")
 
     def __init__(self, sticker: dict):
-        self.file_id = sticker["file_id"]  # type: str
-        self.width = sticker["width"]  # type: int
-        self.height = sticker["height"]  # type: int
+        self.file_id: str = sticker["file_id"]
+        self.width: int = sticker["width"]
+        self.height: int = sticker["height"]
         self.thumbnail = get_optional(sticker, "thumb", PhotoSize)
-        self.emoji = sticker.get("emoji")  # type: Optional[str]
-        self.file_size = sticker.get("file_size")  # type: Optional[int]
+        self.emoji: Optional[str] = sticker.get("emoji")
+        self.file_size: Optional[int] = sticker.get("file_size")
 
 
 class Video(ResponseBase):
@@ -192,13 +196,13 @@ class Video(ResponseBase):
     __slots__ = ("file_id", "width", "height", "duration", "thumbnail", "mime_type", "file_size")
 
     def __init__(self, video: dict):
-        self.file_id = video["file_id"]  # type: str
-        self.width = video["width"]  # type: int
-        self.height = video["height"]  # type: int
+        self.file_id: str = video["file_id"]
+        self.width: int = video["width"]
+        self.height: int = video["height"]
         self.duration = datetime.timedelta(seconds=video["duration"])
         self.thumbnail = get_optional(video, "thumb", PhotoSize)
-        self.mime_type = video.get("mime_type")  # type: Optional[str]
-        self.file_size = video.get("file_size")  # type: Optional[int]
+        self.mime_type: Optional[str] = video.get("mime_type")
+        self.file_size: Optional[int] = video.get("file_size")
 
 
 class Voice(ResponseBase):
@@ -209,10 +213,10 @@ class Voice(ResponseBase):
     __slots__ = ("file_id", "duration", "mime_type", "file_size")
 
     def __init__(self, voice: dict):
-        self.file_id = voice["file_id"]  # type: str
+        self.file_id: str = voice["file_id"]
         self.duration = datetime.timedelta(seconds=voice["duration"])
-        self.mime_type = voice.get("mime_type")  # type: Optional[str]
-        self.file_size = voice.get("file_size")  # type: Optional[int]
+        self.mime_type: Optional[str] = voice.get("mime_type")
+        self.file_size: Optional[int] = voice.get("file_size")
 
 
 class Contact(ResponseBase):
@@ -223,10 +227,10 @@ class Contact(ResponseBase):
     __slots__ = ("phone_number", "first_name", "last_name", "user_id")
 
     def __init__(self, contact: dict):
-        self.phone_number = contact["phone_number"]  # type: str
-        self.first_name = contact["first_name"]  # type: str
-        self.last_name = contact.get("last_name")  # type: Optional[str]
-        self.user_id = contact.get("user_id")  # type: Optional[int]
+        self.phone_number: str = contact["phone_number"]
+        self.first_name: str = contact["first_name"]
+        self.last_name: Optional[str] = contact.get("last_name")
+        self.user_id: Optional[int] = contact.get("user_id")
 
 
 class Location(ResponseBase):
@@ -237,8 +241,8 @@ class Location(ResponseBase):
     __slots__ = ("longitude", "latitude")
 
     def __init__(self, location: dict):
-        self.longitude = location["longitude"]  # type: float
-        self.latitude = location["latitude"]  # type: float
+        self.longitude: float = location["longitude"]
+        self.latitude: float = location["latitude"]
 
 
 class Venue(ResponseBase):
@@ -250,9 +254,9 @@ class Venue(ResponseBase):
 
     def __init__(self, venue: dict):
         self.location = Location(venue["location"])
-        self.title = venue["title"]  # type: str
-        self.address = venue["address"]  # type: str
-        self.foursquare_id = venue.get("foursquare_id")  # type: str
+        self.title: str = venue["title"]
+        self.address: str = venue["address"]
+        self.foursquare_id: str = venue.get("foursquare_id")
 
 
 class InlineQuery(ResponseBase):
@@ -264,11 +268,11 @@ class InlineQuery(ResponseBase):
     __slots__ = ("id", "from_", "location", "query", "offset")
 
     def __init__(self, inline_query: dict):
-        self.id = inline_query["id"]  # type: str
+        self.id: str = inline_query["id"]
         self.from_ = User(inline_query["from"])
         self.location = get_optional(inline_query, "location", Location)
-        self.query = inline_query["query"]  # type: str
-        self.offset = inline_query["offset"]  # type: str
+        self.query: str = inline_query["query"]
+        self.offset: str = inline_query["offset"]  # type: str
 
 
 class ChosenInlineResult(ResponseBase):
@@ -279,10 +283,10 @@ class ChosenInlineResult(ResponseBase):
     __slots__ = ("result_id", "from_", "location", "inline_message_id", "query")
 
     def __init__(self, chosen_inline_result: dict):
-        self.result_id = chosen_inline_result["result_id"]  # type: str
+        self.result_id: str = chosen_inline_result["result_id"]
         self.from_ = User(chosen_inline_result["from"])
         self.location = get_optional(chosen_inline_result, "location", Location)
-        self.inline_message_id = chosen_inline_result.get("inline_message_id")  # type: Optional[str]
+        self.inline_message_id: Optional[str] = chosen_inline_result.get("inline_message_id")
         self.query = chosen_inline_result["query"]
 
 
@@ -296,11 +300,11 @@ class CallbackQuery(ResponseBase):
     __slots__ = ("id", "from_", "message", "inline_message_id", "data")
 
     def __init__(self, callback_query: dict):
-        self.id = callback_query["id"]  # type: str
+        self.id: str = callback_query["id"]
         self.from_ = User(callback_query["from"])
         self.message = get_optional(callback_query, "message", Message)
-        self.inline_message_id = callback_query.get("inline_message_id")  # type: Optional[str]
-        self.data = callback_query["data"]  # type: str
+        self.inline_message_id: Optional[str] = callback_query.get("inline_message_id")
+        self.data: str = callback_query["data"]
 
 
 class Message(ResponseBase):
@@ -317,7 +321,7 @@ class Message(ResponseBase):
     )
 
     def __init__(self, message: dict):
-        self.id = message["message_id"]  # type: int
+        self.id: int = message["message_id"]
         self.from_ = get_optional(message, "from", User)
         self.date = datetime.datetime.fromtimestamp(message["date"])
         self.chat = Chat(message["chat"])
@@ -334,20 +338,20 @@ class Message(ResponseBase):
         self.sticker = get_optional(message, "sticker", Sticker)
         self.video = get_optional(message, "video", Video)
         self.voice = get_optional(message, "voice", Voice)
-        self.caption = message.get("caption")  # type: Optional[str]
+        self.caption: Optional[str] = message.get("caption")
         self.contact = get_optional(message, "contact", Contact)
         self.location = get_optional(message, "location", Location)
         self.venue = get_optional(message, "venue", Venue)
         self.new_chat_member = get_optional(message, "new_chat_member", User)
         self.left_chat_member = get_optional(message, "left_chat_member", User)
-        self.new_chat_title = message.get("new_chat_title")  # type: Optional[str]
+        self.new_chat_title: Optional[str] = message.get("new_chat_title")
         self.new_chat_photo = get_optional_array(message, "new_chat_photo", PhotoSize)
-        self.delete_chat_photo = message.get("delete_chat_photo", False)  # type: bool
-        self.group_chat_created = message.get("group_chat_created", False)  # type: bool
-        self.supergroup_chat_created = message.get("supergroup_chat_created", False)  # type: bool
-        self.channel_chat_created = message.get("channel_chat_created", False)  # type: bool
-        self.migrate_to_chat_id = message.get("migrate_to_chat_id")  # type: Optional[int]
-        self.migrate_from_chat_id = message.get("migrate_from_chat_id")  # type: Optional[int]
+        self.delete_chat_photo: bool = message.get("delete_chat_photo", False)
+        self.group_chat_created: bool = message.get("group_chat_created", False)
+        self.supergroup_chat_created: bool = message.get("supergroup_chat_created", False)
+        self.channel_chat_created: bool = message.get("channel_chat_created", False)
+        self.migrate_to_chat_id: Optional[int] = message.get("migrate_to_chat_id")
+        self.migrate_from_chat_id: Optional[int] = message.get("migrate_from_chat_id")
         self.pinned_message = get_optional(message, "pinned_message", Message)
 
 
@@ -360,7 +364,7 @@ class Update(ResponseBase):
     __slots__ = ("id", "message", "edited_message", "inline_query", "chosen_inline_result", "callback_query")
 
     def __init__(self, update: dict):
-        self.id = update["update_id"]  # type: int
+        self.id: int = update["update_id"]
         self.message = get_optional(update, "message", Message)
         self.edited_message = get_optional(update, "edited_message", Message)
         self.inline_query = get_optional(update, "inline_query", InlineQuery)
@@ -377,7 +381,7 @@ class Telegram:
     logger = logging.getLogger(__name__)
 
     def __init__(self, token: str):
-        self.url = "https://api.telegram.org/bot{}/{{}}".format(token)
+        self.url = f"https://api.telegram.org/bot{token}/{{}}"
         self.session = aiohttp.ClientSession()
 
     async def __aenter__(self):

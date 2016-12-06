@@ -380,9 +380,9 @@ class Telegram:
     headers = {"Content-Type": "application/json"}
     logger = logging.getLogger(__name__)
 
-    def __init__(self, token: str):
+    def __init__(self, token: str, connector=None):
         self.url = f"https://api.telegram.org/bot{token}/{{}}"
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(connector=connector)
 
     async def __aenter__(self):
         await self.session.__aenter__()

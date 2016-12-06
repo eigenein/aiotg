@@ -7,7 +7,7 @@ import json
 import logging
 import sys
 
-from typing import Any, AsyncIterable, Callable, List, Optional, TypeVar, Union
+from typing import Any, Callable, List, Optional, TypeVar, Union
 
 import aiohttp
 

@@ -23,6 +23,8 @@ git+https://github.com/eigenein/aiotg.git
 
 ## Getting Started
 
+### Low-level API
+
 Receiving updates:
 
 ```python

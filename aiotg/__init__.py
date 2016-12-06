@@ -7,7 +7,7 @@ import json
 import logging
 import sys
 
-from typing import Any, Callable, List, Optional, TypeVar, Union
+from typing import Any, AsyncIterable, Callable, List, Optional, TypeVar, Union
 
 import aiohttp
 
@@ -501,6 +501,63 @@ class Telegram:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.__aexit__(exc_type, exc_val, exc_tb)
+
+
+class UpdateSource:
+    """
+    Base source that yields no bot updates.
+    """
+
+    async def get_updates(self):
+        yield
+
+
+class Bot(Telegram):
+    """
+    Higher-level bot API.
+    """
+
+    def __init__(self, token: str):
+        super().__init__(token)
+
+    async def run(self, updates: UpdateSource):
+        """
+        Runs main update-handling loop.
+        """
+        async for update in updates.get_updates():
+            try:
+                await self.on_update(update)
+            except Exception as ex:
+                logging.error("Error while handling update.", exc_info=ex)
+        logging.warning("No more updates available from the provided source.")
+
+    # noinspection PyMethodMayBeStatic
+    async def on_update(self, update: Update):
+        """
+        Handles the update. Override this method in your class.
+        """
+        # Do nothing by default.
+        pass
+
+
+class LongPollingSource(UpdateSource):
+    """
+    Provides updates to bot via long polling.
+    https://core.telegram.org/bots/api#getupdates
+    """
+
+    def __init__(self, telegram: Telegram, limit: int = 100, timeout: int = 5):
+        self.telegram = telegram
+        self.limit = 100
+        self.timeout = 5
+
+    async def get_updates(self):
+        offset = 0
+        while True:
+            updates = await self.telegram.get_updates(offset, self.limit, self.timeout)
+            for update in updates:
+                yield update
+                offset = update.id + 1
 
 
 class TelegramException(Exception):

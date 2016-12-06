@@ -5,7 +5,7 @@ import distutils.core
 
 distutils.core.setup(
     name="aiotg",
-    version="0.1",
+    version="0.2",
     description="Telegram Bot API wrapper for aiohttp.",
     author="Pavel Perestoronin",
     author_email="eigenein@gmail.com",

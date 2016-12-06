@@ -548,8 +548,8 @@ class LongPollingSource(UpdateSource):
 
     def __init__(self, telegram: Telegram, limit: int = 100, timeout: int = 5):
         self.telegram = telegram
-        self.limit = 100
-        self.timeout = 5
+        self.limit = limit
+        self.timeout = timeout
 
     async def get_updates(self):
         offset = 0

@@ -503,36 +503,13 @@ class Telegram:
         await self.session.__aexit__(exc_type, exc_val, exc_tb)
 
 
-class UpdateSource:
-    """
-    Base source that yields no bot updates.
-    """
-
-    async def get_updates(self):
-        yield
-
-
-class Bot(Telegram):
+class Bot:
     """
     Higher-level bot API.
     """
 
-    def __init__(self, token: str):
-        super().__init__(token)
-
-    async def run(self, updates: UpdateSource):
-        """
-        Runs main update-handling loop.
-        """
-        async for update in updates.get_updates():
-            try:
-                await self.on_update(update)
-            except Exception as ex:
-                logging.error("Error while handling update.", exc_info=ex)
-        logging.warning("No more updates available from the provided source.")
-
     # noinspection PyMethodMayBeStatic
-    async def on_update(self, update: Update):
+    async def on_update(self, telegram: Telegram, update: Update):
         """
         Handles the update. Override this method in your class.
         """
@@ -540,24 +517,51 @@ class Bot(Telegram):
         pass
 
 
-class LongPollingSource(UpdateSource):
+class LongPollingRunner:
     """
     Provides updates to bot via long polling.
     https://core.telegram.org/bots/api#getupdates
     """
 
-    def __init__(self, telegram: Telegram, limit: int = 100, timeout: int = 5):
-        self.telegram = telegram
+    def __init__(self, telegram: Telegram, bot: Bot, limit: int = 100, timeout: int = 5):
         self.limit = limit
         self.timeout = timeout
+        self.telegram = telegram
+        self.bot = bot
+        self.offset = 0
+        self.is_stopped = False
 
-    async def get_updates(self):
-        offset = 0
-        while True:
-            updates = await self.telegram.get_updates(offset, self.limit, self.timeout)
-            for update in updates:
-                yield update
-                offset = update.id + 1
+    async def __aenter__(self):
+        await self.telegram.__aenter__()
+        return self
+
+    async def run(self):
+        """
+        Runs bot forever.
+        """
+        while not self.is_stopped:
+            try:
+                await self.loop()
+            except Exception as ex:
+                logging.error("Error while handling update.", exc_info=ex)
+
+    async def loop(self):
+        """
+        Performs single updates loop.
+        """
+        updates = await self.telegram.get_updates(self.offset, self.limit, self.timeout)
+        for update in updates:
+            self.bot.on_update(self.telegram, update)
+            self.offset = update.id + 1
+
+    def stop(self):
+        """
+        Stops accepting new updates.
+        """
+        self.is_stopped = True
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.telegram.__aexit__(exc_type, exc_val, exc_tb)
 
 
 class TelegramException(Exception):

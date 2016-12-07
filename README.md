@@ -39,6 +39,42 @@ async with aiotg.Telegram(token) as telegram:  # type: aiotg.Telegram
         offset = updates[-1].id + 1
 ```
 
+### High-level API
+
+Define a class to receive bot updates:
+
+```python
+class SimpleBot(aiotg.Bot):
+    def on_update(self, telegram: aiotg.Telegram, update: aiotg.Update):
+        logging.info("Received update: %r", update)
+        
+```
+
+Then use one of the runners to start receiving updates:
+
+#### Long-polling Runner
+
+```python
+token = "..."  # Telegram bot API token
+connector = aiohttp.TCPConnector(family=socket.AF_INET, verify_ssl=False)
+telegram = aiotg.Telegram(token, connector=connector)
+runner = aiotg.LongPollingRunner(telegram, SimpleBot())
+
+asyncio.get_event_loop().run_until_complete(runner.run())
+```
+
+#### Webhook Runner
+
+TODO
+
+#### Running module or package as a bot
+
+TODO
+
+### Pattern Matching
+
+TODO
+
 ## Examples
 
 These bots are built with `aiotg`:

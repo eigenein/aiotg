@@ -93,5 +93,5 @@ Please feel free to [submit an issue](https://github.com/eigenein/aiotg/issues) 
 
 ## Dependencies
 
-* Python 3.5+
+* Python 3.6+
 * [`aiohttp`](https://aiohttp.readthedocs.io/en/stable/) library

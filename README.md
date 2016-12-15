@@ -75,6 +75,10 @@ TODO
 
 TODO
 
+#### States
+
+TODO
+
 ## Examples
 
 These bots are built with `aiotg`:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding: utf-8
 
 import datetime
 import enum
@@ -515,6 +514,15 @@ class Bot:
         """
         # Do nothing by default.
         pass
+
+
+class SimpleBot(Bot):
+    """
+    Example simple bot that just logs every received update.
+    """
+
+    def on_update(self, telegram: Telegram, update: Update):
+        logging.info("Received update: %r", update)
 
 
 class LongPollingRunner:

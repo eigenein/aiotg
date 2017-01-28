@@ -5,7 +5,7 @@ import setuptools
 
 setuptools.setup(
     name="aiotg",
-    version="0.2",
+    version="0.3",
     description="Telegram Bot API wrapper for aiohttp.",
     author="Pavel Perestoronin",
     author_email="eigenein@gmail.com",

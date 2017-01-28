@@ -8,6 +8,7 @@
 
 * Supports [long polling](https://core.telegram.org/bots/api#getupdates).
 * Supports [type hinting](https://docs.python.org/3/library/typing.html).
+* Provides [command-line utility](#running-module-or-package-as-a-bot) to run a bot.
 
 ## Library Installation
 
@@ -17,7 +18,7 @@ pip install git+https://github.com/eigenein/aiotg.git
 
 You may want to state the library in `requirements.txt`:
 
-```
+```sh
 git+https://github.com/eigenein/aiotg.git
 ```
 
@@ -47,7 +48,6 @@ Define a class to receive bot updates:
 class SimpleBot(aiotg.Bot):
     def on_update(self, telegram: aiotg.Telegram, update: aiotg.Update):
         logging.info("Received update: %r", update)
-        
 ```
 
 Then use one of the runners to start receiving updates:
@@ -55,7 +55,7 @@ Then use one of the runners to start receiving updates:
 #### Long-polling Runner
 
 ```python
-token = "..."  # Telegram bot API token
+token = "…"  # Telegram bot API token
 connector = aiohttp.TCPConnector(family=socket.AF_INET, verify_ssl=False)
 telegram = aiotg.Telegram(token, connector=connector)
 runner = aiotg.LongPollingRunner(telegram, SimpleBot())
@@ -65,15 +65,21 @@ asyncio.get_event_loop().run_until_complete(runner.run())
 
 #### Webhook Runner
 
-TODO
+Not implemented yet.
 
 #### Running module or package as a bot
 
-TODO
+To avoid writing boilerplate code to set up logging, connection and runner – you can simply run `aiotg` command with the fully-qualified class name: 
+
+```sh
+aiotg --token <TOKEN> aiotg.SimpleBot
+```
+
+See `aiotg --help` for more options.
 
 ### Pattern Matching
 
-TODO
+Not implemented yet.
 
 #### States
 

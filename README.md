@@ -46,7 +46,7 @@ Define a class to receive bot updates:
 
 ```python
 class SimpleBot(aiotg.Bot):
-    def on_update(self, telegram: aiotg.Telegram, update: aiotg.Update):
+    async def on_update(self, telegram: aiotg.Telegram, update: aiotg.Update):
         logging.info("Received update: %r", update)
 ```
 

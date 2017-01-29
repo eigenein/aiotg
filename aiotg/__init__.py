@@ -521,7 +521,7 @@ class SimpleBot(Bot):
     Example simple bot that just logs every received update.
     """
 
-    def on_update(self, telegram: Telegram, update: Update):
+    async def on_update(self, telegram: Telegram, update: Update):
         logging.info("Received update: %r", update)
 
 
@@ -561,7 +561,7 @@ class LongPollingRunner:
             return
         for update in updates:
             try:
-                self.bot.on_update(self.telegram, update)
+                await self.bot.on_update(self.telegram, update)
             except Exception as ex:
                 logging.error("Error while handling update.", exc_info=ex)
             self.offset = update.id + 1

@@ -2,7 +2,7 @@
 
 import datetime
 import enum
-import json
+import io
 import logging
 import sys
 
@@ -10,10 +10,14 @@ from typing import Any, Callable, List, Optional, TypeVar, Union
 
 import aiohttp
 
-T = TypeVar("T")
 
 if sys.version_info < (3, 6):
     raise ImportError("aiotg requires Python 3.6+")
+
+
+T = TypeVar("T")
+ChatId = Union[int, str]
+InputFile = Union[bytes, io.IOBase]
 
 
 class ParseMode(enum.Enum):
@@ -72,7 +76,7 @@ class ResponseBase:
     """
     __slots__ = ()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "%s(%s)" % (self.__class__.__name__, ", ".join(
             "%s: %r" % (name, getattr(self, name))
             for name in self.__slots__
@@ -124,7 +128,7 @@ class MessageEntity(ResponseBase):
         self.url: Optional[str] = message_entity.get("url")
         self.user = get_optional(message_entity, "user", User)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.length
 
 
@@ -376,7 +380,6 @@ class Telegram:
     Telegram Bot API wrapper.
     """
 
-    headers = {"Content-Type": "application/json"}
     logger = logging.getLogger(__name__)
 
     def __init__(self, token: str, connector=None):
@@ -387,25 +390,25 @@ class Telegram:
         await self.session.__aenter__()
         return self
 
-    async def get_updates(self, offset: int, limit: int, timeout: int):
+    async def get_updates(self, offset: int, limit: int, timeout: int) -> List[Update]:
         """
         Use this method to receive incoming updates using long polling.
         https://core.telegram.org/bots/api#getupdates
         """
         return [
             Update(update)
-            for update in await self.post("getUpdates", offset=offset, limit=limit, timeout=timeout)
+            for update in await self.make_request("getUpdates", offset=offset, limit=limit, timeout=timeout)
         ]
 
     async def send_message(
         self,
-        chat_id: Union[int, str],
+        chat_id: ChatId,
         text: str,
         parse_mode=ParseMode.default,
         disable_web_page_preview=False,
         reply_to_message_id=None,
         reply_markup=None,
-    ):
+    ) -> Message:
         params = {"chat_id": chat_id, "text": text}
         if parse_mode != ParseMode.default:
             params["parse_mode"] = parse_mode.value
@@ -415,18 +418,18 @@ class Telegram:
             params["reply_to_message_id"] = reply_to_message_id
         if reply_markup is not None:
             params["reply_markup"] = reply_markup
-        return Message(await self.post("sendMessage", **params))
+        return Message(await self.make_request("sendMessage", **params))
 
     async def edit_message_text(
         self,
-        chat_id: Union[None, int, str],
+        chat_id: Optional[ChatId],
         message_id: Optional[int],
         inline_message_id: Optional[str],
         text: str,
         parse_mode=ParseMode.default,
         disable_web_page_preview=False,
         reply_markup=None,
-    ):
+    ) -> Union[Message, bool]:
         """
         https://core.telegram.org/bots/api#editmessagetext
         """
@@ -443,16 +446,16 @@ class Telegram:
             params["disable_web_page_preview"] = disable_web_page_preview
         if reply_markup is not None:
             params["reply_markup"] = reply_markup
-        result = await self.post("editMessageText", **params)
+        result = await self.make_request("editMessageText", **params)
         return Message(result) if isinstance(result, dict) else result
 
-    async def send_chat_action(self, chat_id: Union[int, str], action: ChatAction):
+    async def send_chat_action(self, chat_id: ChatId, action: ChatAction):
         """
         https://core.telegram.org/bots/api#sendchataction
         """
-        await self.post("sendChatAction", chat_id=chat_id, action=action.value)
+        await self.make_request("sendChatAction", chat_id=chat_id, action=action.value)
 
-    async def answer_callback_query(self, callback_query_id: str, text=None, show_alert=False):
+    async def answer_callback_query(self, callback_query_id: str, text=None, show_alert=False) -> bool:
         """
         https://core.telegram.org/bots/api#answercallbackquery
         """
@@ -461,17 +464,17 @@ class Telegram:
             params["text"] = text
         if show_alert:
             params["show_alert"] = show_alert
-        return await self.post("answerCallbackQuery", **params)
+        return await self.make_request("answerCallbackQuery", **params)
 
     async def send_location(
         self,
-        chat_id: Union[int, str],
+        chat_id: ChatId,
         latitude: float,
         longitude: float,
         disable_notification=False,
         reply_to_message_id=None,
         reply_markup=None,
-    ):
+    ) -> Message:
         """
         https://core.telegram.org/bots/api#sendlocation
         """
@@ -482,14 +485,41 @@ class Telegram:
             params["reply_to_message_id"] = reply_to_message_id
         if reply_markup:
             params["reply_markup"] = reply_markup
-        return Message(await self.post("sendLocation", **params))
+        return Message(await self.make_request("sendLocation", **params))
 
-    async def post(self, method: str, **kwargs):
+    async def send_document(
+        self,
+        chat_id: ChatId,
+        document: Union[str, InputFile],
+        caption: Optional[str] = None,
+        disable_notification: bool = False,
+        reply_to_message_id: Optional[int] = None,
+        reply_markup: Optional[str] = None,
+    ) -> Message:
+        """
+        Use this method to send general files.
+        On success, the sent Message is returned.
+        Bots can currently send files of any type of up to 50 MB in size,
+        this limit may be changed in the future.
+        https://core.telegram.org/bots/api#senddocument
+        """
+        params = {"chat_id": str(chat_id), "document": document}
+        if caption:
+            params["caption"] = caption
+        if disable_notification:
+            params["disable_notification"] = str(disable_notification)
+        if reply_to_message_id:
+            params["reply_to_message_id"] = str(reply_to_message_id)
+        if reply_markup:
+            params["reply_markup"] = reply_markup
+        return Message(await self.make_request("sendDocument", **params))
+
+    async def make_request(self, method: str, **kwargs) -> Union[dict, bool]:
         """
         Posts the request to Telegram Bot API.
         """
-        self.logger.debug("%s(%s)", method, kwargs)
-        async with self.session.post(self.url.format(method), data=json.dumps(kwargs), headers=self.headers) as response:
+        self.logger.debug("%s(%r)", method, kwargs)
+        async with self.session.post(self.url.format(method), data=kwargs) as response:
             payload = await response.json()
             if payload["ok"]:
                 self.logger.debug("%s: %s", method, payload)

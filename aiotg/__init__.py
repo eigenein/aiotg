@@ -548,18 +548,22 @@ class LongPollingRunner:
         Runs bot forever.
         """
         while not self.is_stopped:
-            try:
-                await self.loop()
-            except Exception as ex:
-                logging.error("Error while handling update.", exc_info=ex)
+            await self.loop()
 
     async def loop(self):
         """
         Performs single updates loop.
         """
-        updates = await self.telegram.get_updates(self.offset, self.limit, self.timeout)
+        try:
+            updates = await self.telegram.get_updates(self.offset, self.limit, self.timeout)
+        except Exception as ex:
+            logging.error("Failed to get updates.", exc_info=ex)
+            return
         for update in updates:
-            self.bot.on_update(self.telegram, update)
+            try:
+                self.bot.on_update(self.telegram, update)
+            except Exception as ex:
+                logging.error("Error while handling update.", exc_info=ex)
             self.offset = update.id + 1
 
     def stop(self):

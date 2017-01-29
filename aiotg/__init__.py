@@ -3,10 +3,11 @@
 import datetime
 import enum
 import io
+import json
 import logging
 import sys
 
-from typing import Any, Callable, List, Optional, TypeVar, Union
+from typing import Any, Callable, Iterable, List, Optional, TypeVar, Union
 
 import aiohttp
 
@@ -82,6 +83,22 @@ class ResponseBase:
             for name in self.__slots__
             if getattr(self, name)
         ))
+
+
+class WebhookInfo(ResponseBase):
+    __slots__ = (
+        "url", "has_custom_certificate", "pending_update_count", "last_error_date",
+        "last_error_message", "max_connections", "allowed_updates",
+    )
+
+    def __init__(self, webhook_info: dict):
+        self.url: str = webhook_info["url"]
+        self.has_custom_certificate: bool = webhook_info["has_custom_certificate"]
+        self.pending_update_count: int = webhook_info["pending_update_count"]
+        self.last_error_date = get_optional(webhook_info, "last_error_date", datetime.datetime.fromtimestamp)
+        self.last_error_message: Optional[str] = webhook_info.get("last_error_message")
+        self.max_connections: Optional[int] = webhook_info.get("max_connections")
+        self.allowed_updates: Optional[List[str]] = webhook_info.get("allowed_updates")
 
 
 class User(ResponseBase):
@@ -333,7 +350,7 @@ class Message(ResponseBase):
         self.forward_date = get_optional(message, "forward_date", datetime.datetime.fromtimestamp)
         self.reply_to_message = get_optional(message, "reply_to_message", Message)
         self.edit_date = get_optional(message, "edit_date", datetime.datetime.fromtimestamp)
-        self.text = message.get("text")  # type: Optional[str]
+        self.text: Optional[str] = message.get("text")
         self.entities = get_optional_array(message, "entities", MessageEntity)
         self.audio = get_optional(message, "audio", Audio)
         self.document = get_optional(message, "document", Document)
@@ -364,12 +381,17 @@ class Update(ResponseBase):
     Only one of the optional fields can be present in any given update.
     https://core.telegram.org/bots/api#update
     """
-    __slots__ = ("id", "message", "edited_message", "inline_query", "chosen_inline_result", "callback_query")
+    __slots__ = (
+        "id", "message", "edited_message", "channel_post", "edited_channel_post", "inline_query",
+        "chosen_inline_result", "callback_query",
+    )
 
     def __init__(self, update: dict):
         self.id: int = update["update_id"]
         self.message = get_optional(update, "message", Message)
         self.edited_message = get_optional(update, "edited_message", Message)
+        self.channel_post = get_optional(update, "channel_post", Message)
+        self.edited_channel_post = get_optional(update, "edited_channel_post", Message)
         self.inline_query = get_optional(update, "inline_query", InlineQuery)
         self.chosen_inline_result = get_optional(update, "chosen_inline_result", ChosenInlineResult)
         self.callback_query = get_optional(update, "callback_query", CallbackQuery)
@@ -389,6 +411,14 @@ class Telegram:
     async def __aenter__(self):
         await self.session.__aenter__()
         return self
+
+    async def get_me(self) -> User:
+        """
+        A simple method for testing your bot's auth token. Requires no parameters.
+        Returns basic information about the bot in form of a User object.
+        https://core.telegram.org/bots/api#getme
+        """
+        return User(await self.make_request("getMe"))
 
     async def get_updates(self, offset: int, limit: int, timeout: int) -> List[Update]:
         """
@@ -487,6 +517,53 @@ class Telegram:
             params["reply_markup"] = reply_markup
         return Message(await self.make_request("sendLocation", **params))
 
+    # FIXME: untested.
+    async def set_webhook(
+        self,
+        url: str,
+        certificate: Optional[InputFile],
+        max_connections: int = None,
+        allowed_updates: Optional[Iterable[str]] = None,
+    ) -> bool:
+        """
+        Use this method to specify a url and receive incoming updates via an outgoing webhook.
+        Whenever there is an update for the bot,
+        we will send an HTTPS POST request to the specified url,
+        containing a JSON-serialized Update.
+        In case of an unsuccessful request, we will give up after a reasonable amount of attempts.
+        Returns true.
+        If you'd like to make sure that the Webhook request comes from Telegram,
+        we recommend using a secret path in the URL, e.g. https://www.example.com/<token>.
+        Since nobody else knows your bot‘s token, you can be pretty sure it’s us.
+        https://core.telegram.org/bots/api#setwebhook
+        """
+        params = {"url": url}
+        if certificate:
+            params["certificate"] = certificate
+        if max_connections:
+            params["max_connections"] = max_connections
+        if allowed_updates:
+            params["allowed_updates"] = json.dumps(list(allowed_updates))
+        return await self.make_request("setWebhook", **params)
+
+    # FIXME: untested.
+    async def delete_webhook(self) -> bool:
+        """
+        Use this method to remove webhook integration if you decide to switch back to getUpdates.
+        Returns True on success. Requires no parameters.
+        https://core.telegram.org/bots/api#deletewebhook
+        """
+        return await self.make_request("deleteWebhook")
+
+    async def get_webhook_info(self) -> WebhookInfo:
+        """
+        Use this method to get current webhook status. Requires no parameters.
+        On success, returns a WebhookInfo object.
+        If the bot is using getUpdates, will return an object with the url field empty.
+        https://core.telegram.org/bots/api#getwebhookinfo
+        """
+        return WebhookInfo(await self.make_request("getWebhookInfo"))
+
     async def send_document(
         self,
         chat_id: ChatId,
@@ -538,11 +615,17 @@ class Bot:
     """
 
     # noinspection PyMethodMayBeStatic
+    async def on_start(self, telegram: Telegram):
+        """
+        Called right before handling any updates. Override this method in your class.
+        """
+        pass
+
+    # noinspection PyMethodMayBeStatic
     async def on_update(self, telegram: Telegram, update: Update):
         """
         Handles the update. Override this method in your class.
         """
-        # Do nothing by default.
         pass
 
 
@@ -550,6 +633,9 @@ class SimpleBot(Bot):
     """
     Example simple bot that just logs every received update.
     """
+
+    async def on_start(self, telegram: Telegram):
+        logging.info("Me: %r", await telegram.get_me())
 
     async def on_update(self, telegram: Telegram, update: Update):
         logging.info("Received update: %r", update)
@@ -577,6 +663,7 @@ class LongPollingRunner:
         """
         Runs bot forever.
         """
+        await self.bot.on_start(self.telegram)
         while not self.is_stopped:
             await self.loop()
 
